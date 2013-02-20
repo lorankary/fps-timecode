@@ -1,9 +1,11 @@
 # Timecode library
 # Implements Timecode class
-# Vesion 0.0.1
+# Version 0.0.2
 #
 # Author: Loran Kary
 # Copyright 2013 Focal Point Software, all rights reserved
+
+module FPS      # Focal Point Software
 
 # A timecode library has two main purposes.
 # 1.) Given the timecode address of the first frame of a sequence of frames, 
@@ -23,7 +25,8 @@
 # If the frame count given is nil, the string argument is used to
 # calculate a frame count.  
 
-module FPS      # Focal Point Software
+# version 0.0.2 notes -- make several instance methods be class methods instead.
+#   Often there is no need to create an instance of class Timecode.
 
 class Timecode
 
@@ -38,6 +41,87 @@ class Timecode
              fps_60_df:  { fp24h: 5178816, fph: 215784, fptm: 35964, fpm: 3596, fps: 60 },
              fps_60_ndf: { fp24h: 5184000, fph: 216000, fptm: 36000, fpm: 3600, fps: 60 },
            }
+     
+  # count_to_string      
+  # Class method to compute a string from a frame count
+  def self.count_to_string(tc_mode, tc_count, duration = false) 
+    tc_count = Timecode.normalize(tc_mode, tc_count)
+
+    counts = Counts[tc_mode]
+    hours = tc_count / counts[:fph]
+    rem = tc_count % counts[:fph]
+    tens_mins = rem / counts[:fptm]
+    rem = rem % counts[:fptm]
+    units_mins = rem / counts[:fpm]
+    rem = rem % counts[:fpm]
+    
+    if(duration == false)  # not a duration, do drop-frame processing
+        # handle 30 fps drop frame
+        if(tc_mode == :fps_30_df && units_mins > 0 && rem <= 1)
+          units_mins -= 1
+          rem += counts[:fpm]
+        end
+        # handle 60 fps drop frame
+        if(tc_mode == :fps_60_df && units_mins > 0 && rem <= 3)
+          units_mins -= 1
+          rem += counts[:fpm]
+        end
+    end
+    
+    secs = rem / counts[:fps]
+    frms = rem % counts[:fps]
+    
+    "%02d:%d%d:%02d:%02d" % [hours, tens_mins, units_mins, secs, frms]
+  end
+  
+  # string_to_count
+  # Class method to compute a count from a string  
+  def self.string_to_count(tc_mode, tc_string)
+    unless Counts.include?(tc_mode)
+      raise ArgumentError,  "invalid timecode mode"
+    end
+    unless tc_string.is_a? String 
+      raise ArgumentError, "invalid timecode string"
+    end
+    unless tc_string =~ /\A(\d{2})[:;.](\d{2})[:;.](\d{2})[:;.](\d{2})\Z/
+      raise ArgumentError, "invalid timecode string"
+    end
+    if($1.to_i >= 24 || $2.to_i >= 60 || $3.to_i >= 60 || $4.to_i >= Counts[tc_mode][:fps])
+      raise ArgumentError, "invalid timecode string"
+    end
+
+    counts = Counts[tc_mode]
+    tc_string =~ /\A(\d{2})[:;.](\d)(\d)[:;.](\d{2})[:;.](\d{2})\Z/
+    $1.to_i * counts[:fph] +
+      $2.to_i * counts[:fptm] +
+      $3.to_i * counts[:fpm] +
+      $4.to_i * counts[:fps] + $5.to_i
+  end
+  
+  # Class method to normalize a frame count >= 0 and < 24h
+  # Correct 24 hour overflow or underflow
+  def self.normalize(tc_mode, tc_count)
+    # tc_mode must be given and must be one of the known tc modes
+    unless Counts.include?(tc_mode)
+      raise ArgumentError,  "invalid timecode mode"
+    end
+
+    unless tc_count.is_a? Fixnum 
+      raise ArgumentError, "invalid frame count #{tc_count}"
+    end
+    # normalize to 24 hours
+    _24h = Counts[tc_mode][:fp24h]
+    while tc_count < 0 do tc_count += _24h end
+    while tc_count >= _24h do tc_count -= _24h end
+    tc_count
+  end
+  
+  # Class method to compute a string as a duration from a frame count_to_string
+  def self.string_as_duration(tc_mode, tc_count)
+    Timecode.count_to_string(tc_mode, tc_count, true)
+  end
+
+
 
 # initialize
 # Construct a new instance of Timecode, given a mode and either a 
@@ -52,77 +136,19 @@ class Timecode
     unless Counts.include?(tc_mode)
       raise ArgumentError,  "invalid timecode mode"
     end
+    
+    @tc_mode = tc_mode
    
     # if a count is given, use that and ignore the string, if any 
     if(tc_count != nil)
-        unless tc_count.is_a? Fixnum 
-          raise ArgumentError, "invalid frame count"
-        end
-        # normalize to 24 hours
-        _24h = Counts[tc_mode][:fp24h]
-        while tc_count < 0 do tc_count += _24h end
-        while tc_count >= _24h do tc_count -= _24h end
+      @tc_count = Timecode.normalize(@tc_mode, tc_count)
+      @tc_string = Timecode.count_to_string(@tc_mode, @tc_count)
     else # must be tc_string given and must be well-formatted and valid
-        unless tc_string.is_a? String 
-          raise ArgumentError, "invalid timecode string"
-        end
-        unless tc_string =~ /\A(\d{2})[:;.](\d{2})[:;.](\d{2})[:;.](\d{2})\Z/
-          raise ArgumentError, "invalid timecode string"
-        end
-        if($1.to_i >= 24 || $2.to_i >= 60 || $3.to_i >= 60 || $4.to_i >= Counts[tc_mode][:fps])
-          raise ArgumentError, "invalid timecode string"
-        end
-    end
-    
-    @tc_mode = tc_mode                  # now init instance variables
-    if(tc_count)                        # give precedence to the count arg
-      @tc_count = tc_count
-      @tc_string = count_to_string      # ignore string arg if count given
-    else
-      @tc_string = tc_string
-      @tc_count = string_to_count
-      @tc_string = count_to_string      # in case illegal df time was given
-    end    
+      @tc_count = Timecode.string_to_count(@tc_mode, tc_string)
+      # always convert back to string because given string may not be drop-frame legal
+      @tc_string = Timecode.count_to_string(@tc_mode, @tc_count)
+    end   
   end   #initialize
-
-#compute a count from the string  
-  def string_to_count
-    counts = Counts[@tc_mode]
-    @tc_string =~ /\A(\d{2})[:;.](\d)(\d)[:;.](\d{2})[:;.](\d{2})\Z/
-    $1.to_i * counts[:fph] +
-      $2.to_i * counts[:fptm] +
-      $3.to_i * counts[:fpm] +
-      $4.to_i * counts[:fps] + $5.to_i
-  end
-
-#compute a string from the frame count
-  def count_to_string(duration = false)  
-    counts = Counts[@tc_mode]
-    hours = @tc_count / counts[:fph]
-    rem = @tc_count % counts[:fph]
-    tens_mins = rem / counts[:fptm]
-    rem = rem % counts[:fptm]
-    units_mins = rem / counts[:fpm]
-    rem = rem % counts[:fpm]
-    
-    if(duration == false)  # not a duration, do drop-frame processing
-        # handle 30 fps drop frame
-        if(@tc_mode == :fps_30_df && units_mins > 0 && rem <= 1)
-          units_mins -= 1
-          rem += counts[:fpm]
-        end
-        # handle 60 fps drop frame
-        if(@tc_mode == :fps_60_df && units_mins > 0 && rem <= 3)
-          units_mins -= 1
-          rem += counts[:fpm]
-        end
-    end
-    
-    secs = rem / counts[:fps]
-    frms = rem % counts[:fps]
-    
-    "%02d:%d%d:%02d:%02d" % [hours, tens_mins, units_mins, secs, frms]
-  end
   
   # string_as_duration
   # The difference of two timecodes might be used as a duration.
@@ -135,7 +161,7 @@ class Timecode
   # should be displayed as "00:01:00:00" -- one minute.
   # 
   def string_as_duration
-    count_to_string(true)
+    Timecode.string_as_duration(@tc_mode, @tc_count)
   end
   
   # succ

@@ -104,6 +104,22 @@ class TestFpsTimecode < Test::Unit::TestCase
         b = b.succ
         end
     assert_equal ["00:00:59:28", "00:00:59:29", "00:01:00:02", "00:01:00:03"], a
+    a.clear
+    b = FPS::Timecode.new(:fps_60_df, "00:01:00:00", nil)
+    6.times do
+        a << b.tc_string
+        b = b.succ
+        end
+    assert_equal ["00:00:59:56", "00:00:59:57", "00:00:59:58", "00:00:59:59",
+                    "00:01:00:04", "00:01:00:05"], a
+  end
+  
+  def test_class_methods
+    assert_equal "00:01:00:00", FPS::Timecode.count_to_string(:fps_30_ndf, 1800)
+    assert_equal 1800, FPS::Timecode.string_to_count(:fps_30_ndf, "00:01:00:00")
+    assert_equal 1800, FPS::Timecode.normalize(:fps_30_ndf, FPS::Timecode::Counts[:fps_30_ndf][:fp24h] + 1800)
+    assert_equal FPS::Timecode::Counts[:fps_30_ndf][:fp24h] - 1800, FPS::Timecode.normalize(:fps_30_ndf, -1800)
+    assert_equal "00:01:00:00", FPS::Timecode.string_as_duration(:fps_30_df, 1798)
   end
     
 
