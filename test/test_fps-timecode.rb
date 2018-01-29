@@ -30,7 +30,11 @@ class TestFpsTimecode < Test::Unit::TestCase
     end
   end
   
-  def test_create_count_is_used_when_both_are_given
+  def test_create_use_string_by_default
+    assert_equal "00:01:00:00", FPS::Timecode.new(:fps_30_ndf, "00:01:00:00", 0).tc_string
+  end  
+  
+  def test_create_fall_back_to_count_when_string_is_invalid
     assert_equal "00:01:00:00", FPS::Timecode.new(:fps_30_ndf, "invalid", 1800).tc_string
   end
   

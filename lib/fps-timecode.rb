@@ -13,6 +13,18 @@ module FPS      # Focal Point Software
 # 2.) Given the timecode address of the first frame of a sequence, and
 #     given the timecode address for the nth frame of the sequence,  what is n?
 
+# Example 1.  A non-drop-frame 30 fps sequence starts at 00:01:00:00.  What is
+#           the timecode address of the 100th frame of the sequence?
+#  FPS::Timecode.count_to_string(:fps_30_ndf, 
+#       FPS::Timecode.string_to_count(:fps_30_ndf,"00:01:00:00") + 100)
+#   => "00:01:03:10"
+
+# Example 2.  A non-drop-frame 30 fps sequence starts at 00:01:00:00. What is n
+#       for the frame with the address 00:01:03:10?
+#  FPS::Timecode.string_to_count(:fps_30_ndf,"00:01:03:10") -
+#        FPS::Timecode.string_to_count(:fps_30_ndf,"00:01:00:00")
+#   => 100
+
 # An instance of the Timecode class represents one timecode address.
 # A timecode mode is always required to be given.  The mode determines the frame
 # rate and the dropness (drop-frame or non-drop-frame) of the timecode address.
@@ -20,13 +32,11 @@ module FPS      # Focal Point Software
 # Create an instance of a Timecode using either a string in the format "xx:xx:xx:xx"
 # or a frame count.  The frame count represents n for the nth frame of a sequence
 # that begins with timecode address "00:00:00:00" (the zeroeth frame of the sequence).
-# If a frame count is given when creating a timecode instance, the string argument
-# is ignored and the string is calculated from the frame count.
-# If the frame count given is nil, the string argument is used to
-# calculate a frame count.  
+# When creating a timecode instance, default to using the string argument
+# and fall back to using the frame count argument if the string is invalid. 
 
-# version 0.0.2 notes -- make several instance methods be class methods instead.
-#   Often there is no need to create an instance of class Timecode.
+# Since there are many class methods, often there is no need to create 
+# an instance of class Timecode.
 
 class Timecode
 
@@ -139,15 +149,17 @@ class Timecode
     
     @tc_mode = tc_mode
    
-    # if a count is given, use that and ignore the string, if any 
-    if(tc_count != nil)
-      @tc_count = Timecode.normalize(@tc_mode, tc_count)
-      @tc_string = Timecode.count_to_string(@tc_mode, @tc_count)
-    else # must be tc_string given and must be well-formatted and valid
+    # Try to use the string to construct the instance and fall back
+    # to the count if an exception is raised
+    begin
       @tc_count = Timecode.string_to_count(@tc_mode, tc_string)
       # always convert back to string because given string may not be drop-frame legal
       @tc_string = Timecode.count_to_string(@tc_mode, @tc_count)
-    end   
+    rescue
+      @tc_count = Timecode.normalize(@tc_mode, tc_count)
+      @tc_string = Timecode.count_to_string(@tc_mode, @tc_count)
+    end        
+  
   end   #initialize
   
   # string_as_duration
