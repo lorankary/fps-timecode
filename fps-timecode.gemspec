@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'fps-timecode'
-  s.version = '0.0.3'
+  s.version = '0.1.0'
   s.summary = 'Implements timecode class'
   s.description = 'A library to support drop-frame and non-drop-frame timecodes'
   s.author = 'Loran Kary'

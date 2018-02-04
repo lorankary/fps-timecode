@@ -101,7 +101,45 @@
 
   <section class="description">
     
-<p>Since there are many class methods, often there is no need to create  an
+<p>The Focal Point Systems timecode library has two main purposes.</p>
+<ul><li>
+<p>1.) Given the timecode address of the first frame of a sequence of frames,
+and given n, what is the timecode address of the nth frame of a sequence?</p>
+</li><li>
+<p>2.) Given the timecode address of the first frame of a sequence, and given
+the timecode address for the nth frame of the sequence,  what is n?</p>
+</li></ul>
+
+<p>Example 1.  A non-drop-frame 30 fps sequence starts at 00:01:00:00.  What
+is the timecode address of the 100th frame of the sequence? <a
+href="Timecode.html#method-c-count_to_string">::count_to_string</a>(:fps_30_ndf,
+<a
+href="Timecode.html#method-c-string_to_count">::string_to_count</a>(:fps_30_ndf,“00:01:00:00”)
++ 100)  =&gt; “00:01:03:10”</p>
+
+<p>Example 2.  A non-drop-frame 30 fps sequence starts at 00:01:00:00. What is
+n for the frame with the address 00:01:03:10? <a
+href="Timecode.html#method-c-string_to_count">::string_to_count</a>(:fps_30_ndf,“00:01:03:10”)
+- <a
+href="Timecode.html#method-c-string_to_count">::string_to_count</a>(:fps_30_ndf,“00:01:00:00”)
+=&gt; 100</p>
+
+<p>An instance of the <a href="Timecode.html">Timecode</a> class represents
+one timecode address. A timecode mode is always required to be given.  The
+mode determines the frame rate and the dropness (drop-frame or
+non-drop-frame) of the timecode address. The mode must be one of
+Timecode::Counts.keys.  E.g. :fps_24, :fps_25, :fps_30_df, :fps_30_ndf</p>
+
+<p>Create an instance of a <a href="Timecode.html">Timecode</a> using either a
+string in the format “xx:xx:xx:xx” or a frame count.  The frame count
+represents n for the nth frame of a sequence that begins with timecode
+address “00:00:00:00” (the zeroeth frame of the sequence).</p>
+
+<p>When creating a timecode instance, the default is to use the string
+argument ignoring the frame count argument and falling back to using the
+frame count argument if the string is invalid.</p>
+
+<p>Since there are many class methods, often there is no need to create an
 instance of class <a href="Timecode.html">Timecode</a>.</p>
 
   </section>
@@ -199,16 +237,15 @@ instance of class <a href="Timecode.html">Timecode</a>.</p>
 
         <div class="method-description">
           
-          <p><a href="Timecode.html#method-c-count_to_string">::count_to_string</a></p>
-
-<p>Class method to compute a string from a frame count</p>
+          <p><a href="Timecode.html#method-c-count_to_string">::count_to_string</a>
+Class method to produce a timecode string from a frame count</p>
           
           
 
           
           <div class="method-source-code" id="count_to_string-source">
-            <pre><span class="ruby-comment"># File lib/fps-timecode.rb, line 57</span>
-<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">count_to_string</span>(<span class="ruby-identifier">tc_mode</span>, <span class="ruby-identifier">tc_count</span>, <span class="ruby-identifier">duration</span> = <span class="ruby-keyword">false</span>) 
+            <pre><span class="ruby-comment"># File lib/fps-timecode.rb, line 56</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">count_to_string</span>(<span class="ruby-identifier">tc_mode</span>, <span class="ruby-identifier">tc_count</span>, <span class="ruby-identifier">duration</span> = <span class="ruby-keyword">false</span>)
   <span class="ruby-identifier">tc_count</span> = <span class="ruby-constant">Timecode</span>.<span class="ruby-identifier">normalize</span>(<span class="ruby-identifier">tc_mode</span>, <span class="ruby-identifier">tc_count</span>)
 
   <span class="ruby-identifier">counts</span> = <span class="ruby-constant">Counts</span>[<span class="ruby-identifier">tc_mode</span>]
@@ -218,7 +255,7 @@ instance of class <a href="Timecode.html">Timecode</a>.</p>
   <span class="ruby-identifier">rem</span> = <span class="ruby-identifier">rem</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">counts</span>[<span class="ruby-value">:fptm</span>]
   <span class="ruby-identifier">units_mins</span> = <span class="ruby-identifier">rem</span> <span class="ruby-operator">/</span> <span class="ruby-identifier">counts</span>[<span class="ruby-value">:fpm</span>]
   <span class="ruby-identifier">rem</span> = <span class="ruby-identifier">rem</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">counts</span>[<span class="ruby-value">:fpm</span>]
-  
+
   <span class="ruby-keyword">if</span>(<span class="ruby-identifier">duration</span> <span class="ruby-operator">==</span> <span class="ruby-keyword">false</span>)  <span class="ruby-comment"># not a duration, do drop-frame processing</span>
       <span class="ruby-comment"># handle 30 fps drop frame</span>
       <span class="ruby-keyword">if</span>(<span class="ruby-identifier">tc_mode</span> <span class="ruby-operator">==</span> <span class="ruby-value">:fps_30_df</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">units_mins</span> <span class="ruby-operator">&gt;</span> <span class="ruby-value">0</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">rem</span> <span class="ruby-operator">&lt;=</span> <span class="ruby-value">1</span>)
@@ -231,10 +268,10 @@ instance of class <a href="Timecode.html">Timecode</a>.</p>
         <span class="ruby-identifier">rem</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">counts</span>[<span class="ruby-value">:fpm</span>]
       <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
-  
+
   <span class="ruby-identifier">secs</span> = <span class="ruby-identifier">rem</span> <span class="ruby-operator">/</span> <span class="ruby-identifier">counts</span>[<span class="ruby-value">:fps</span>]
   <span class="ruby-identifier">frms</span> = <span class="ruby-identifier">rem</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">counts</span>[<span class="ruby-value">:fps</span>]
-  
+
   <span class="ruby-string">&quot;%02d:%d%d:%02d:%02d&quot;</span> <span class="ruby-operator">%</span> [<span class="ruby-identifier">hours</span>, <span class="ruby-identifier">tens_mins</span>, <span class="ruby-identifier">units_mins</span>, <span class="ruby-identifier">secs</span>, <span class="ruby-identifier">frms</span>]
 <span class="ruby-keyword">end</span></pre>
           </div>
@@ -260,15 +297,18 @@ instance of class <a href="Timecode.html">Timecode</a>.</p>
 
         <div class="method-description">
           
-          <p>initialize Construct a new instance of <a
-href="Timecode.html">Timecode</a>, given a mode and either a  timecode
-string or a frame count. Raises ArgumentError</p>
+          <p>initialize</p>
+
+<p>Construct a new instance of <a href="Timecode.html">FPS::Timecode</a>,
+given a mode and either a timecode string or a frame count.</p>
+
+<p>Raises ArgumentError</p>
           
           
 
           
           <div class="method-source-code" id="new-source">
-            <pre><span class="ruby-comment"># File lib/fps-timecode.rb, line 140</span>
+            <pre><span class="ruby-comment"># File lib/fps-timecode.rb, line 150</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-identifier">tc_mode</span>, <span class="ruby-identifier">tc_string</span>, <span class="ruby-identifier">tc_count</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-comment"># tc_string and tc_count cannot both be nil</span>
   <span class="ruby-keyword">if</span>(<span class="ruby-identifier">tc_string</span> <span class="ruby-operator">===</span> <span class="ruby-keyword">nil</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">tc_count</span> <span class="ruby-operator">===</span> <span class="ruby-keyword">nil</span>)
@@ -278,9 +318,9 @@ string or a frame count. Raises ArgumentError</p>
   <span class="ruby-keyword">unless</span> <span class="ruby-constant">Counts</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">tc_mode</span>)
     <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>,  <span class="ruby-string">&quot;invalid timecode mode&quot;</span>
   <span class="ruby-keyword">end</span>
-  
+
   <span class="ruby-ivar">@tc_mode</span> = <span class="ruby-identifier">tc_mode</span>
- 
+
   <span class="ruby-comment"># Try to use the string to construct the instance and fall back</span>
   <span class="ruby-comment"># to the count if an exception is raised</span>
   <span class="ruby-keyword">begin</span>
@@ -290,7 +330,7 @@ string or a frame count. Raises ArgumentError</p>
   <span class="ruby-keyword">rescue</span>
     <span class="ruby-ivar">@tc_count</span> = <span class="ruby-constant">Timecode</span>.<span class="ruby-identifier">normalize</span>(<span class="ruby-ivar">@tc_mode</span>, <span class="ruby-identifier">tc_count</span>)
     <span class="ruby-ivar">@tc_string</span> = <span class="ruby-constant">Timecode</span>.<span class="ruby-identifier">count_to_string</span>(<span class="ruby-ivar">@tc_mode</span>, <span class="ruby-ivar">@tc_count</span>)
-  <span class="ruby-keyword">end</span>        
+  <span class="ruby-keyword">end</span>
 
 <span class="ruby-keyword">end</span></pre>
           </div>
@@ -316,21 +356,21 @@ string or a frame count. Raises ArgumentError</p>
 
         <div class="method-description">
           
-          <p>Class method to normalize a frame count &gt;= 0 and &lt; 24h Correct 24
+          <p>Class method to normalize a frame count &gt;= 0 and &lt; 24h. Corrects 24
 hour overflow or underflow</p>
           
           
 
           
           <div class="method-source-code" id="normalize-source">
-            <pre><span class="ruby-comment"># File lib/fps-timecode.rb, line 113</span>
+            <pre><span class="ruby-comment"># File lib/fps-timecode.rb, line 112</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">normalize</span>(<span class="ruby-identifier">tc_mode</span>, <span class="ruby-identifier">tc_count</span>)
   <span class="ruby-comment"># tc_mode must be given and must be one of the known tc modes</span>
   <span class="ruby-keyword">unless</span> <span class="ruby-constant">Counts</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">tc_mode</span>)
     <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>,  <span class="ruby-string">&quot;invalid timecode mode&quot;</span>
   <span class="ruby-keyword">end</span>
 
-  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">tc_count</span>.<span class="ruby-identifier">is_a?</span> <span class="ruby-constant">Fixnum</span> 
+  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">tc_count</span>.<span class="ruby-identifier">is_a?</span> <span class="ruby-constant">Fixnum</span>
     <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-node">&quot;invalid frame count #{tc_count}&quot;</span>
   <span class="ruby-keyword">end</span>
   <span class="ruby-comment"># normalize to 24 hours</span>
@@ -362,17 +402,23 @@ hour overflow or underflow</p>
 
         <div class="method-description">
           
-          <p>Class method to compute a string as a duration from a frame <a
-href="Timecode.html#method-c-count_to_string">::count_to_string</a></p>
+          <p>Class method to produce a timecode string as a duration from a frame count
+The difference of two timecodes might be used as a duration. For non-drop
+frame, the duration string does not differ from the string as a timecode
+address.  But for drop-frame, timecodes that don&#39;t exist as an address
+can exist as a duration. One minute in drop frame is 1798 frames or
+00:00:59:28. “00:01:00:00” as a drop-frame timecode address does not exist.
+But the difference between 00:01:59:28 and 00:00:59:28 should be displayed
+as “00:01:00:00” – one minute.</p>
           
           
 
           
           <div class="method-source-code" id="string_as_duration-source">
-            <pre><span class="ruby-comment"># File lib/fps-timecode.rb, line 130</span>
+            <pre><span class="ruby-comment"># File lib/fps-timecode.rb, line 138</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">string_as_duration</span>(<span class="ruby-identifier">tc_mode</span>, <span class="ruby-identifier">tc_count</span>)
-  <span class="ruby-constant">Timecode</span>.<span class="ruby-identifier">count_to_string</span>(<span class="ruby-identifier">tc_mode</span>, <span class="ruby-identifier">tc_count</span>, <span class="ruby-keyword">true</span>)
-<span class="ruby-keyword">end</span></pre>
+   <span class="ruby-constant">Timecode</span>.<span class="ruby-identifier">count_to_string</span>(<span class="ruby-identifier">tc_mode</span>, <span class="ruby-identifier">tc_count</span>, <span class="ruby-keyword">true</span>)
+ <span class="ruby-keyword">end</span></pre>
           </div>
           
         </div>
@@ -397,18 +443,18 @@ href="Timecode.html#method-c-count_to_string">::count_to_string</a></p>
         <div class="method-description">
           
           <p><a href="Timecode.html#method-c-string_to_count">::string_to_count</a>
-Class method to compute a count from a string</p>
+Class method to compute a frame count from a timecode string</p>
           
           
 
           
           <div class="method-source-code" id="string_to_count-source">
-            <pre><span class="ruby-comment"># File lib/fps-timecode.rb, line 89</span>
+            <pre><span class="ruby-comment"># File lib/fps-timecode.rb, line 88</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">string_to_count</span>(<span class="ruby-identifier">tc_mode</span>, <span class="ruby-identifier">tc_string</span>)
   <span class="ruby-keyword">unless</span> <span class="ruby-constant">Counts</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">tc_mode</span>)
     <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>,  <span class="ruby-string">&quot;invalid timecode mode&quot;</span>
   <span class="ruby-keyword">end</span>
-  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">tc_string</span>.<span class="ruby-identifier">is_a?</span> <span class="ruby-constant">String</span> 
+  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">tc_string</span>.<span class="ruby-identifier">is_a?</span> <span class="ruby-constant">String</span>
     <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;invalid timecode string&quot;</span>
   <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">unless</span> <span class="ruby-identifier">tc_string</span> <span class="ruby-operator">=~</span> <span class="ruby-regexp">/\A(\d{2})[:;.](\d{2})[:;.](\d{2})[:;.](\d{2})\Z/</span>
@@ -456,13 +502,13 @@ Class method to compute a count from a string</p>
 
         <div class="method-description">
           
-          <p>compare two timecodes comparison (spaceship) operator does string compare</p>
+          <p>Compare two timecodes. Comparison (spaceship) operator does string compare</p>
           
           
 
           
           <div class="method-source-code" id="3C-3D-3E-source">
-            <pre><span class="ruby-comment"># File lib/fps-timecode.rb, line 195</span>
+            <pre><span class="ruby-comment"># File lib/fps-timecode.rb, line 196</span>
 <span class="ruby-keyword">def</span> <span class="ruby-operator">&lt;=&gt;</span>(<span class="ruby-identifier">other</span>)
   <span class="ruby-ivar">@tc_string</span> <span class="ruby-operator">&lt;=&gt;</span> <span class="ruby-identifier">other</span>.<span class="ruby-identifier">tc_string</span>
 <span class="ruby-keyword">end</span></pre>
@@ -489,16 +535,15 @@ Class method to compute a count from a string</p>
 
         <div class="method-description">
           
-          <p>compare two timecodes for equality</p>
-
-<p>equality operator does string compare two timecodes may be considered equal
-even though their modes and counts may be different.</p>
+          <p>Compare two timecodes for equality. Equality operator does string
+comparison. Two timecodes may be considered equal even though their modes
+and counts may be different.</p>
           
           
 
           
           <div class="method-source-code" id="3D-3D-source">
-            <pre><span class="ruby-comment"># File lib/fps-timecode.rb, line 189</span>
+            <pre><span class="ruby-comment"># File lib/fps-timecode.rb, line 190</span>
 <span class="ruby-keyword">def</span> <span class="ruby-operator">==</span>(<span class="ruby-identifier">other</span>)
   <span class="ruby-ivar">@tc_string</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">other</span>.<span class="ruby-identifier">tc_string</span>
 <span class="ruby-keyword">end</span></pre>
@@ -527,19 +572,13 @@ even though their modes and counts may be different.</p>
           
           <p><a
 href="Timecode.html#method-c-string_as_duration">::string_as_duration</a>
-The difference of two timecodes might be used as a duration. For non-drop
-frame, the duration string does not differ from the string as a timecode
-address.  But for drop-frame, timecodes  that don&#39;t exist as an address
-can exist as a duration. One minute in drop frame is 1798 frames or
-00:00:59:28. “00:01:00:00” as a drop-frame timecode address does not exist.
-But the difference between 00:01:59:28 and 00:00:59:28 should be displayed
-as “00:01:00:00” – one minute.</p>
+instance method</p>
           
           
 
           
           <div class="method-source-code" id="string_as_duration-source">
-            <pre><span class="ruby-comment"># File lib/fps-timecode.rb, line 175</span>
+            <pre><span class="ruby-comment"># File lib/fps-timecode.rb, line 177</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">string_as_duration</span>
   <span class="ruby-constant">Timecode</span>.<span class="ruby-identifier">string_as_duration</span>(<span class="ruby-ivar">@tc_mode</span>, <span class="ruby-ivar">@tc_count</span>)
 <span class="ruby-keyword">end</span></pre>
@@ -566,13 +605,13 @@ as “00:01:00:00” – one minute.</p>
 
         <div class="method-description">
           
-          <p>succ return the next timecode address in the sequence</p>
+          <p>Return the next timecode address in the sequence</p>
           
           
 
           
           <div class="method-source-code" id="succ-source">
-            <pre><span class="ruby-comment"># File lib/fps-timecode.rb, line 181</span>
+            <pre><span class="ruby-comment"># File lib/fps-timecode.rb, line 182</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">succ</span>
   <span class="ruby-constant">Timecode</span>.<span class="ruby-identifier">new</span>(<span class="ruby-ivar">@tc_mode</span>, <span class="ruby-keyword">nil</span>, <span class="ruby-ivar">@tc_count</span><span class="ruby-operator">+</span><span class="ruby-value">1</span>)
 <span class="ruby-keyword">end</span></pre>
